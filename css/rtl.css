@@ -142,7 +142,7 @@
         #a11y-keys,
         #a11y-lang-keys {
             right: unset;
-            left: 20px;
+            left: calc(50px + (var(--offcanvas_margin, 15px) / 2));
         }
     }
     .cpModal {
