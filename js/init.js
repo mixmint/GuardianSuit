@@ -1,5 +1,5 @@
 /**
- * @version 2.6.0
+ * @version 2.6.2
  * @package GuardianSuit - Multilanguage Captive Portal Template for OPNsense
  * @author Mirosław Majka (mix@proask.pl)
  * @copyright (C) 2025 Mirosław Majka <mix@proask.pl>
@@ -326,10 +326,6 @@ const authenticateUser = (credentials) => {
     .done((data) => {
         $.clientInfo(data);
         $.connectionLogon(data);
-/*
-        if (settings.layout.enable_menu && preparedMenu) {
-            $.clientInfo(data, '#menuPortalEvent');
-        }*/
     })
     .fail($.connectionFailed);
 };
@@ -351,10 +347,6 @@ const checkConnectionStatus = () => {
     .done((data) => {
         $.clientInfo(data);
         $.connectionStatus(data);
-/*
-        if (settings.layout.enable_menu && preparedMenu) {
-            $.clientInfo(data, '#menuPortalEvent');
-        }*/
     })
     .fail(() => setTimeout($.connectionFailed, 1000));
 };

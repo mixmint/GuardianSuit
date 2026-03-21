@@ -1,5 +1,5 @@
 /**
- * @version 2.6.0
+ * @version 2.6.2
  * @package GuardianSuit - Multilanguage Captive Portal Template for OPNsense
  * @author Mirosław Majka (mix@proask.pl)
  * @copyright (C) 2025 Mirosław Majka <mix@proask.pl>
@@ -1214,7 +1214,7 @@ $.initKeyboardAccessibility = () => {
             leftAltPressed = true;
         }
 
-        if (e.shiftKey && /^[a-z]$/.test(key) && !leftAltPressed) {
+        if (!activeInput && e.shiftKey && /^[a-z]$/.test(key) && !leftAltPressed) {
             keyBuffer.push(key);
             if (keyBuffer.length > maxCodeLength) {
                 keyBuffer.shift();
@@ -1226,14 +1226,14 @@ $.initKeyboardAccessibility = () => {
 
             bufferTimeout = setTimeout(checkLangBuffer, 1000);
 
-            if (activeInput) {
+            if (!activeInput) {
                 e.preventDefault();
             }
 
             return;
         }
 
-        if (leftShiftPressed && leftAltPressed && /^[a-z]$/.test(key)) {
+        if (!activeInput && leftShiftPressed && leftAltPressed && /^[a-z]$/.test(key)) {
             e.preventDefault();
             triggerShortcut(key);
         }
