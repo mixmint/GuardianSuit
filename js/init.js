@@ -1,5 +1,5 @@
 /**
- * @version 2.6.2
+ * @version 2.6.3
  * @package GuardianSuit - Multilanguage Captive Portal Template for OPNsense
  * @author Mirosław Majka (mix@proask.pl)
  * @copyright (C) 2025 Mirosław Majka <mix@proask.pl>
