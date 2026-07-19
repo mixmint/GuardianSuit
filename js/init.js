@@ -1,5 +1,5 @@
 /**
- * @version 2.6.4
+ * @version 2.7.0
  * @package GuardianSuit - Multilanguage Captive Portal Template for OPNsense
  * @author Mirosław Majka (mix@proask.pl)
  * @copyright (C) 2025 Mirosław Majka <mix@proask.pl>
@@ -24,6 +24,8 @@ $(document).ready(() => {
 
 const initResources = () => {
     if (settings.css_params) {
+        const vars = {};
+
         Object.entries(settings.css_params).forEach(([key, value]) => {
             if (settings.layout.a11y && settings.layout.a11y_contrast) {
                 value = $.adjustContrast(value, {
@@ -31,8 +33,11 @@ const initResources = () => {
                     threshold: settings.layout.a11y_threshold
                 });
             }
-            _root.style.setProperty(`--${key}`, value);
+
+            vars[key] = value;
         });
+
+        applyCssVariables(vars);
     }
 
     if (settings.layout?.force_locales_data) {
@@ -63,7 +68,7 @@ const initResources = () => {
 
     const cssResources = [];
     const jsResources  = [
-        'bootstrap533.min.js',
+        'bootstrap538.min.js',
         'sprintf.min.js',
         'css_browser_selector.js',
         'cpModal.min.js',
@@ -88,6 +93,26 @@ const initResources = () => {
             });
         }
     });
+};
+
+const applyCssVariables = (variables) => {
+    let styleEl = document.getElementById('gs-theme-vars');
+
+    if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'gs-theme-vars';
+
+        const masterCss = document.querySelector('link[href$="master.css"]');
+
+        if (masterCss) {
+            masterCss.parentNode.insertBefore(styleEl, masterCss);
+        } else {
+            document.head.prepend(styleEl);
+        }
+    }
+
+    const css           = Object.entries(variables).map(([key, value]) => `--${key}: ${value};`).join('\n');
+    styleEl.textContent = `:root {\n${css}\n}`;
 };
 
 const useWCAG = () => {

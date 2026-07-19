@@ -180,6 +180,23 @@
             }
         }
     }
+
+    &.webkit {
+        .captiveportal {
+            #signin-box #signin[disabled],
+            #login_none #signin_anon[disabled] {
+                &:after {
+                    padding-right: initial;
+                    padding-left: inherit;
+                }
+            }
+            button {
+                &:after {
+                    letter-spacing: unset;
+                }
+            }
+        }
+    }
 }
 
 @media (max-width:1200px) {
