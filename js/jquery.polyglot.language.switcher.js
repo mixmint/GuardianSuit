@@ -1,162 +1,126 @@
-/* ---------------------------------------------------------------------- */
-/* "Polyglot" Language Switcher
-/* ----------------------------------------------------------------------
-Version: 2.2
-Original Author: Ixtendo
-Original Author URI: http://www.ixtendo.com
-Modified by: Mirosław Majka
-Modification Date: 2025-10-09
-License: MIT License
-License URI: http://www.opensource.org/licenses/mit-license.php
-------------------------------------------------------------------------- */
-
 /**
+ * ----------------------------------------------------------------------
+ * "Polyglot" Language Switcher - Language switcher for multilingual websites.
+ * ----------------------------------------------------------------------
+ * @version 2.7.0
+ * @package GuardianSuit - Multilanguage Captive Portal Template for OPNsense
+ * @author Mirosław Majka (mix@proask.pl)
+ * Modification Date: 2026-07-20
+ * License: MIT License
+ * License URI: http://www.opensource.org/licenses/mit-license.php
+ * -------------------------------------------------------------------------
+
  * MODIFICATIONS by Mirosław Majka:
- * - Added "mouse-scroll" indicator for overflowing dropdowns.
- * - Mouse-scroll fades in/out with smooth animations.
- * - Arrows (.arrow) initially paused and opacity 0; start on dropdown open (.active).
+ * - Replaced the original jQuery Timer implementation with a standalone vanilla JavaScript Timer class.
  */
 
-/* ---------------------------------------------------------------------- */
-/* jquery.timer.js
-/* ----------------------------------------------------------------------
-Copyright (c) 2011 Jason Chavannes <jason.chavannes@gmail.com>
-Original License: MIT
-This part of the code remains unmodified.
-------------------------------------------------------------------------- */
+class Timer {
+    constructor(action, time = 0, autostart = false) {
+        this.active        = false;
+        this.timeoutObject = null;
+        this.remaining     = time;
+        this.intervalTime  = time;
+        this.action        = null;
+        this.last          = 0;
+
+        if (typeof action === 'object' && action !== null) {
+            autostart = action.autostart ?? autostart;
+            time      = action.time ?? time;
+            action    = action.action;
+        }
+
+        if (typeof action === 'function') {
+            this.action = action;
+        }
+
+        if (typeof time === 'number' && !Number.isNaN(time)) {
+            this.intervalTime = time;
+            this.remaining    = time;
+        }
+
+        if (autostart) {
+            this.active = true;
+            this.setTimer();
+        }
+    }
+
+    once(time = 0) {
+        window.setTimeout(() => this.action?.(), time);
+        return this;
+    }
+
+    play(reset = false) {
+        if (!this.active) {
+            this.active = true;
+            this.setTimer(reset ? this.intervalTime : this.remaining);
+        }
+
+        return this;
+    }
+
+    pause() {
+        if (this.active) {
+            this.active     = false;
+            this.remaining -= Date.now() - this.last;
+            this.clearTimer();
+        }
+
+        return this;
+    }
+
+    stop() {
+        this.active    = false;
+        this.remaining = this.intervalTime;
+        this.clearTimer();
+
+        return this;
+    }
+
+    toggle(reset = false) {
+        if (this.active) {
+            this.pause();
+        } else {
+            this.play(reset);
+        }
+
+        return this;
+    }
+
+    reset() {
+        this.stop();
+        this.play(true);
+        return this;
+    }
+
+    clearTimer() {
+        clearTimeout(this.timeoutObject);
+        this.timeoutObject = null;
+    }
+
+    setTimer(time = this.intervalTime) {
+        if (typeof this.action !== 'function') {
+            return;
+        }
+
+        this.remaining = time;
+        this.last      = Date.now();
+
+        this.clearTimer();
+
+        this.timeoutObject = setTimeout(() => this.go(), time);
+    }
+
+    go() {
+        if (!this.active) {
+            return;
+        }
+
+        this.action();
+        this.setTimer();
+    }
+}
 
 (function ($) {
-    $.timer = function(func, time, autostart) {
-        this.set = function(func, time, autostart) {
-            this.init = true;
-            if (typeof func == 'object') {
-                var paramList = ['autostart', 'time'];
-                for (var arg in paramList) {
-                    if (func[paramList[arg]] != undefined) {
-                        eval(paramList[arg] + " = func[paramList[arg]]");
-                    }
-                };
-
-                func = func.action;
-            }
-
-            if (typeof func == 'function') {
-                this.action = func;
-            }
-
-            if (!isNaN(time)) {
-                this.intervalTime = time;
-            }
-
-            if (autostart && !this.active) {
-                this.active = true;
-                this.setTimer();
-            }
-
-            return this;
-        };
-
-        this.once = function(time) {
-            var timer = this;
-            if (isNaN(time)) {
-                time = 0;
-            }
-
-            window.setTimeout(function() {timer.action();}, time);
-            
-            return this;
-        };
-
-        this.play = function(reset) {
-            if (!this.active) {
-                if(reset) {
-                    this.setTimer();
-                } else {
-                    this.setTimer(this.remaining);
-                }
-
-                this.active = true;
-            }
-
-            return this;
-        };
-
-        this.pause = function() {
-            if (this.active) {
-                this.active     = false;
-                this.remaining -= new Date() - this.last;
-
-                this.clearTimer();
-            }
-
-            return this;
-        };
-
-        this.stop = function() {
-            this.active    = false;
-            this.remaining = this.intervalTime;
-
-            this.clearTimer();
-
-            return this;
-        };
-
-        this.toggle = function(reset) {
-            if (this.active) {
-                this.pause();
-            } else if (reset) {
-                this.play(true);
-            } else {
-                this.play();
-            }
-
-            return this;
-        };
-
-        this.reset = function() {
-            this.active = false;
-            this.play(true);
-
-            return this;
-        };
-
-        this.clearTimer = function() {
-            window.clearTimeout(this.timeoutObject);
-        };
-
-        this.setTimer = function(time) {
-            var timer = this;
-            if (typeof this.action != 'function') {
-                return;
-            }
-
-            if (isNaN(time)) {
-                time = this.intervalTime;
-            }
-
-            this.remaining = time;
-            this.last      = new Date();
-
-            this.clearTimer();
-            
-            this.timeoutObject = window.setTimeout(function() {timer.go();}, time);
-        };
-
-        this.go = function() {
-            if (this.active) {
-                this.action();
-                this.setTimer();
-            }
-        };
-
-        if (this.init) {
-            return new $.timer(func, time, autostart);
-        } else {
-            this.set(func, time, autostart);
-            return this;
-        }
-    };
-
     $.fn.polyglotLanguageSwitcher = function (op) {
         var ls              = $.fn.polyglotLanguageSwitcher;
         var rootElement     = $(this);
@@ -168,8 +132,8 @@ This part of the code remains unmodified.
         var settings        = $.extend({}, ls.defaults, op);
         var isStaticWebSite = settings.websiteType == 'static';
         var aElement,
-            closePopupTimer;
-        
+        closePopupTimer;
+
         init();
         installListeners();
 
@@ -242,16 +206,16 @@ This part of the code remains unmodified.
 
             if (ul.next(".mouse-scroll").length === 0) {
                 const scrollEl = $(`
-                    <div class="mouse-scroll" style="display:none;">
-                        <div class="mouse">
-                            <div class="wheel"></div>
-                        </div>
-                        <div>
-                            <span class="arrow item1"></span>
-                            <span class="arrow item2"></span>
-                            <span class="arrow item3"></span>
-                        </div>
+                <div class="mouse-scroll" style="display: none;">
+                    <div class="mouse">
+                        <div class="wheel"></div>
                     </div>
+                    <div>
+                        <span class="arrow item1"></span>
+                        <span class="arrow item2"></span>
+                        <span class="arrow item3"></span>
+                    </div>
+                </div>
                 `);
 
                 ul.after(scrollEl);
@@ -262,7 +226,7 @@ This part of the code remains unmodified.
         }
 
         function removeMouseScroll() {
-            var ul = ulElement;
+            var ul       = ulElement;
             var scrollEl = ul.next(".mouse-scroll");
 
             if (scrollEl.length > 0) {
@@ -305,7 +269,9 @@ This part of the code remains unmodified.
                     ulElement.append(liElements[i]);
                 }
             }
+
             var innerSpanElement = aElement.children(":first-child");
+
             aElement.attr("id", selectedId);
             aElement.attr("aria-label", selectedAriaLabel);
             aElement.attr("title", selectedTitle);
@@ -325,11 +291,11 @@ This part of the code remains unmodified.
             });
 
             if (settings.openMode == 'hover') {
-                closePopupTimer = $.timer(function () {
-                    close();
-                });
-
-                closePopupTimer.set({ time:settings.hoverTimeout, autostart:true });
+                closePopupTimer = new Timer(
+                    () => close(),
+                    settings.hoverTimeout,
+                    true
+                );
             }
         }
 
@@ -346,6 +312,7 @@ This part of the code remains unmodified.
                     }
                 });
             }
+
             options.each(function () {
                 var id = $(this).attr("id");
                 var selected;
@@ -462,9 +429,11 @@ This part of the code remains unmodified.
                 queryString += x + param + "=" + params[param];
                 i++;
             }
+
             if (settings.noRefresh) {
                 queryString += '#';
             }
+
             return queryString;
         }
 
