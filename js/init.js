@@ -1,5 +1,5 @@
 /**
- * @version 2.7.0
+ * @version 2.8.0
  * @package GuardianSuit - Multilanguage Captive Portal Template for OPNsense
  * @author Mirosław Majka (mix@proask.pl)
  * @copyright (C) 2025 Mirosław Majka <mix@proask.pl>
@@ -51,7 +51,7 @@ const initResources = () => {
         let styleEl = document.getElementById('flags');
 
         if (!styleEl) {
-            styleEl    = document.createElement('style');
+            styleEl = document.createElement('style');
             styleEl.id = 'flags';
 
             document.head.appendChild(styleEl);
@@ -60,7 +60,7 @@ const initResources = () => {
         styleEl.innerHTML = Object.keys(settings.langs)
         .map(lang => {
             const flag = langsFlags[lang] || lang;
-            const url  = `/images/flags/${flagsDir}/${flag}.svg`;
+            const url = `/images/flags/${flagsDir}/${flag}.svg`;
             return `#${lang}::before {background-image: url("${url}");}`;
         })
         .join('');
@@ -111,7 +111,7 @@ const applyCssVariables = (variables) => {
         }
     }
 
-    const css           = Object.entries(variables).map(([key, value]) => `--${key}: ${value};`).join('\n');
+    const css = Object.entries(variables).map(([key, value]) => `--${key}: ${value};`).join('\n');
     styleEl.textContent = `:root {\n${css}\n}`;
 };
 
@@ -200,9 +200,9 @@ const initializeVantaEffect = () => {
 
 const updateLogo = async () => {
     const logoContainer = $('#logo');
-    const fallback      = '/images/default-logo.svg';
-    const extensions    = ['svg', 'png', 'jpg'];
-    const basePath      = '/images/logo';
+    const fallback = '/images/default-logo.svg';
+    const extensions = ['svg', 'png', 'jpg'];
+    const basePath = '/images/logo';
 
     if (settings.logo && settings.logo.startsWith('data:image/')) {
         logoContainer.html(

@@ -1,5 +1,5 @@
 /**
- * @version 2.7.0
+ * @version 2.8.0
  * @package GuardianSuit - Multilanguage Captive Portal Template for OPNsense
  * @author Mirosław Majka (mix@proask.pl)
  * @copyright (C) 2025 Mirosław Majka <mix@proask.pl>
@@ -17,29 +17,30 @@ let settings = {},
     preparedMenu = '',
     preparedMenuConfig = {},
     langsFlags = {
-        af:"za",am:"et",ar:"sa",az:"az",be:"by",bg:"bg",bn:"bd",bs:"ba",ca:"es-ct",cs:"cz",cy:"gb",
-        da:"dk",de:"de",el:"gr",en:"gb",es:"es",et:"ee",eu:"es",fa:"ir",fi:"fi",tl:"ph",fr:"fr",
-        ga:"ie",gl:"es",gu:"in",he:"il",hi:"in",hr:"hr",hu:"hu",hy:"am",id:"id",is:"is",it:"it",
-        ja:"jp",ko:"kr",ka:"ge",kk:"kz",km:"kh",kn:"in",ky:"kg",lt:"lt",lv:"lv",mk:"mk",ml:"in",
-        mn:"mn",mr:"in",ms:"my",mt:"mt",nb:"no",ne:"np",nl:"nl",pa:"in",pl:"pl",ps:"af",pt:"pt",
-        ro:"ro",ru:"ru",si:"lk",sk:"sk",sl:"si",sq:"al",sr:"rs",sv:"se",sw:"ke",ta:"in",te:"in",
-        th:"th",tr:"tr",uk:"ua",ur:"pk",uz:"uz",vi:"vn",zh:"cn",zu:"za",dv:"mv",ha:"ng",ku:"iq",
-        kmr:"tr",sy:"sy",yi:"il",dz:"bt",rw:"rw",so:"so",tg:"tj",mg:"mg",my:"mm",km:"kh",lo:"la",
-        ti:"er",rn:"bi",xh:"za",st:"ls",tn:"bw",ss:"sz",nd:"zw",aa:"er"
+        aa: "er", af: "za", ak: "gh", am: "et", ar: "sa", ay: "bo", az: "az", be: "by", bg: "bg", bm: "bf", bn: "bd",
+        bo: "bo", bs: "ba", ca: "es-ct", cs: "cz", cy: "gb", da: "dk", de: "de", dv: "mv", dz: "bt", el: "gr", en: "gb",
+        es: "es", et: "ee", eu: "es", fa: "ir", fi: "fi", fr: "fr", ga: "ie", gl: "es", gn: "py", gu: "in", ha: "ng",
+        he: "il", hi: "in", hr: "hr", ht: "ht", hu: "hu", hy: "am", id: "id", is: "is", it: "it", ja: "jp", ka: "ge",
+        kk: "kz", km: "kh", kmr: "tr", kn: "in", ko: "kr", ku: "iq", ky: "kg", la: "va", lb: "lu", lo: "la", lt: "lt",
+        lv: "lv", me: "me", mg: "mg", mi: "nz", mk: "mk", ml: "in", mn: "mn", mr: "in", ms: "my", mt: "mt", my: "mm",
+        nb: "no", nd: "zw", ne: "np", nl: "nl", nn: "no", no: "no", pa: "in", pl: "pl", ps: "af", pt: "pt", qu: "pe",
+        rn: "bi", ro: "ro", ru: "ru", rw: "rw", si: "lk", sk: "sk", sl: "si", sm: "ws", sn: "zw", so: "so", sq: "al",
+        sr: "rs", ss: "sz", st: "ls", sv: "se", sw: "ke", sy: "sy", ta: "in", te: "in", tg: "tj", th: "th", ti: "er",
+        tl: "ph", tn: "bw", to: "to", tr: "tr", uk: "ua", ur: "pk", uz: "uz", vi: "vn", xh: "za", yi: "il", zh: "cn",
+        zu: "za"
     },
     langISOMap = {
-        en:"en-GB",pl:"pl-PL",sk:"sk-SK",fr:"fr-FR",de:"de-DE",nl:"nl-NL",no:"nb-NO",sv:"sv-SE",
-        fi:"fi-FI",es:"es-ES",ca:"ca-ES",ja:"ja-JP",ko:"ko-KR",zh:"zh-CN",pt:"pt-PT",it:"it-IT",
-        da:"da-DK",af:"af-ZA",am:"am-ET",ar:"ar-SA",az:"az-AZ",be:"be-BY",bg:"bg-BG",bn:"bn-BD",
-        bs:"bs-BA",cs:"cs-CZ",cy:"cy-GB",el:"el-GR",et:"et-EE",eu:"eu-ES",fa:"fa-IR",tl:"tl-PH",
-        ga:"ga-IE",gl:"gl-ES",gu:"gu-IN",he:"he-IL",hi:"hi-IN",hr:"hr-HR",hu:"hu-HU",hy:"hy-AM",
-        id:"id-ID",is:"is-IS",ka:"ka-GE",kk:"kk-KZ",km:"km-KH",kn:"kn-IN",ky:"ky-KG",lt:"lt-LT",
-        lv:"lv-LV",mk:"mk-MK",ml:"ml-IN",mn:"mn-MN",mr:"mr-IN",ms:"ms-MY",mt:"mt-MT",nb:"nb-NO",
-        ne:"ne-NP",pa:"pa-IN",ps:"ps-AF",ro:"ro-RO",ru:"ru-RU",si:"si-LK",sl:"sl-SI",sq:"sq-AL",
-        sr:"sr-RS",sw:"sw-KE",ta:"ta-IN",te:"te-IN",th:"th-TH",tr:"tr-TR",uk:"uk-UA",ur:"ur-PK",
-        uz:"uz-UZ",vi:"vi-VN",zu:"zu-ZA",dv:"dv-MV",ha:"ha-NG",ku:"ku-TR",kmr:"ku-TR",sy:"ar-SY",
-        yi:"he-IL",dz:"dz-BT",rw:"rw-RW",so:"so-SO",tg:"tg-TJ",mg:"mg-MG",my:"my-MM",lo:"lo-LA",
-        ti:"ti-ER",rn:"rn-BI",xh:"xh-ZA",st:"st-LS",tn:"tn-BW",ss:"ss-SZ",nd:"nd-ZW",aa:"aa-ER"
+        aa: "aa-ER", af: "af-ZA", ak: "ak-GH", am: "am-ET", ar: "ar-SA", ay: "ay-BO", az: "az-AZ", be: "be-BY", bg: "bg-BG", bm: "bm-BF", bn: "bn-BD",
+        bo: "bo-BO", bs: "bs-BA", ca: "ca-ES", cs: "cs-CZ", cy: "cy-GB", da: "da-DK", de: "de-DE", dv: "dv-MV", dz: "dz-BT", el: "el-GR", en: "en-GB",
+        es: "es-ES", et: "et-EE", eu: "eu-ES", fa: "fa-IR", fi: "fi-FI", fr: "fr-FR", ga: "ga-IE", gl: "gl-ES", gn: "gn-PY", gu: "gu-IN", ha: "ha-NG",
+        he: "he-IL", hi: "hi-IN", hr: "hr-HR", ht: "ht-HT", hu: "hu-HU", hy: "hy-AM", id: "id-ID", is: "is-IS", it: "it-IT", ja: "ja-JP", ka: "ka-GE",
+        kk: "kk-KZ", km: "km-KH", kmr: "ku-TR", kn: "kn-IN", ko: "ko-KR", ku: "ku-TR", ky: "ky-KG", la: "la-VA", lb: "lb-LU", lo: "lo-LA", lt: "lt-LT",
+        lv: "lv-LV", me: "sr-ME", mg: "mg-MG", mi: "mi-NZ", mk: "mk-MK", ml: "ml-IN", mn: "mn-MN", mr: "mr-IN", ms: "ms-MY", mt: "mt-MT", my: "my-MM",
+        nb: "nb-NO", nd: "nd-ZW", ne: "ne-NP", nl: "nl-NL", nn: "nb-NO", no: "nb-NO", pa: "pa-IN", pl: "pl-PL", ps: "ps-AF", pt: "pt-PT", qu: "qu-PE",
+        rn: "rn-BI", ro: "ro-RO", ru: "ru-RU", rw: "rw-RW", si: "si-LK", sk: "sk-SK", sl: "sl-SI", sm: "sm-WS", sn: "sn-ZW", so: "so-SO", sq: "sq-AL",
+        sr: "sr-RS", ss: "ss-SZ", st: "st-LS", sv: "sv-SE", sw: "sw-KE", sy: "ar-SY", ta: "ta-IN", te: "te-IN", tg: "tg-TJ", th: "th-TH", ti: "ti-ER",
+        tl: "tl-PH", tn: "tn-BW", to: "to-TO", tr: "tr-TR", uk: "uk-UA", ur: "ur-PK", uz: "uz-UZ", vi: "vi-VN", xh: "xh-ZA", yi: "he-IL", zh: "zh-CN",
+        zu: "zu-ZA"
     };
 
 const shortcutMap = {
@@ -661,8 +662,8 @@ $.clientInfo = async (data, selector = null) => {
 };
 
 const updateTimeLeft = (timeLeft) => {
-    const days = Math.floor(timeLeft / 43200);
-    const hours = Math.floor((timeLeft % 43200) / 3600);
+    const days = Math.floor(timeLeft / 86400);
+    const hours = Math.floor((timeLeft % 86400) / 3600);
     const minutes = Math.floor((timeLeft % 3600) / 60);
 
     const formatTime = (value, texts) => {
