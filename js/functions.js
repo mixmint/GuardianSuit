@@ -56,7 +56,7 @@ const shortcutMap = {
 };
 
 const allowedAttrs = ['aria-label', 'title'];
-const hour12Countries = ['us','ca','ph','au','nz','mx','co','pk','in','ie','my','sg','bd','jm','gb','ak'];
+const hour12Countries = ['us','ca','ph','au','nz','mx','co','pk','in','ie','my','sg','bd','jm','gb','gh'];
 
 var loadedScripts = new Set();
 var loadedStyles = new Set();
