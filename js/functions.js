@@ -1,5 +1,5 @@
 /**
- * @version 2.8.0
+ * @version 2.9.0
  * @package GuardianSuit - Multilanguage Captive Portal Template for OPNsense
  * @author Mirosław Majka (mix@proask.pl)
  * @copyright (C) 2025 Mirosław Majka <mix@proask.pl>
@@ -55,11 +55,11 @@ const shortcutMap = {
     m: "#menuTrigger"
 };
 
-const allowedAttrs    = ['aria-label', 'title'];
-const hour12Countries = ['us','ca','ph','au','nz','mx','co','pk','in','ie','my','sg','bd','jm','gb'];
+const allowedAttrs = ['aria-label', 'title'];
+const hour12Countries = ['us','ca','ph','au','nz','mx','co','pk','in','ie','my','sg','bd','jm','gb','ak'];
 
-var loadedScripts     = new Set();
-var loadedStyles      = new Set();
+var loadedScripts = new Set();
+var loadedStyles = new Set();
 
 const isAllowedAttr = (attr) => allowedAttrs.includes(attr.toLowerCase()) || attr.toLowerCase().startsWith('data-');
 
@@ -197,13 +197,13 @@ const forceLocalesData = () => {
     }
 
     const navLang = navigator.language.replace('_', '-');
-    const parts   = navLang.split('-');
+    const parts = navLang.split('-');
 
     if (parts.length !== 2) {
         return;
     }
 
-    const lang   = parts[0].toLowerCase();
+    const lang = parts[0].toLowerCase();
     const region = parts[1].toUpperCase();
 
     if (langsFlags.hasOwnProperty(lang)) {
@@ -303,7 +303,7 @@ const createMenuItemHTML = (() => {
             onclick = `onclick="$.handleMenuModalClick(this); return false;"`;
         }
 
-        const href   = typeof item.href === 'string' ? item.href : '#';
+        const href = typeof item.href === 'string' ? item.href : '#';
         const target = item.target || '_self';
 
         return `
@@ -448,7 +448,7 @@ $.loadLangs = async (language = settings.default_lang) => {
             $('.menu-wrapper').remove();
             $('.captiveportal').prepend(offcanvasHtml);
 
-            const menuEl  = document.getElementById('menu');
+            const menuEl = document.getElementById('menu');
             const trigger = document.querySelector('.menu-trigger');
 
             if (menuEl && trigger) {
@@ -516,7 +516,7 @@ $.setLang = (id) => {
 }
 
 $.setLangLayout = (langs, selectedLang, container) => {
-    const layoutType   = settings.layout.lang_layout || 'select';
+    const layoutType = settings.layout.lang_layout || 'select';
     const langFlagsDir = settings.layout.lang_flags_dir || '4x3';
     let html = '';
 
@@ -607,11 +607,11 @@ $.clientInfo = async (data, selector = null) => {
     data.macAddress && appendInfo('flex-50', langText.cp_portal_ifconfig_mac_address, data.macAddress);
 
     if (typeof data.startTime === 'number') {
-        const date    = new Date(data.startTime * 1000);
-        const lang    = document.documentElement.lang;
-        const locale  = langISOMap[lang] || null;
+        const date = new Date(data.startTime * 1000);
+        const lang = document.documentElement.lang;
+        const locale = langISOMap[lang] || null;
         const country = langsFlags[lang];
-        const hour12  = country ? hour12Countries.includes(country.toLowerCase()) : false;
+        const hour12 = country ? hour12Countries.includes(country.toLowerCase()) : false;
 
         const options = {
             hour: '2-digit',
@@ -717,14 +717,14 @@ $.createCookie = (name, value, days) => {
 
     d.setTime(d.getTime() + (days*24*60*60000));
 
-    var expires     = "expires=" + d.toGMTString();
+    var expires = "expires=" + d.toGMTString();
     document.cookie = name + "=" + value + ";" + expires + ";path=/";
 }
 
 $.getCookie = (cname) => {
-    var name          = cname + "=";
+    var name = cname + "=";
     var decodedCookie = decodeURIComponent(document.cookie);
-    var ca            = decodedCookie.split(';');
+    var ca = decodedCookie.split(';');
 
     for(var i = 0; i < ca.length; i++) {
         var c = ca[i];
@@ -874,9 +874,9 @@ $.isAttempt = (data) => {
         return false;
     }
 
-    var now     = new Date(Date.now());
+    var now = new Date(Date.now());
     var control = new Date($.getCookie('loginTime'));
-    data.local  = new Date(
+    data.local = new Date(
         JSON.parse(
             String.fromCharCode(...(data.local).match(/.{1,2}/g).map((e,i) => parseInt(e, 16) ^ localId.charCodeAt(i % localId.length) % 255))
         ).loginTime
@@ -914,7 +914,7 @@ $.adjustContrast = (value, opts = {}) => {
         return value;
     }
 
-    const FACTOR          = typeof opts.factor === 'number' ? Math.max(0, Math.min(1, opts.factor)) : 0.2;
+    const FACTOR = typeof opts.factor === 'number' ? Math.max(0, Math.min(1, opts.factor)) : 0.2;
     const LIGHT_THRESHOLD = typeof opts.threshold === 'number' ? opts.threshold : 0.5;
 
     const clamp = (v, a = 0, b = 255) => Math.max(a, Math.min(b, Math.round(v)));
@@ -979,10 +979,10 @@ $.adjustContrast = (value, opts = {}) => {
         }
 
         const parts = m[1].split(',').map(p => p.trim());
-        const r     = parseFloat(parts[0]);
-        const g     = parseFloat(parts[1]);
-        const b     = parseFloat(parts[2]);
-        const a     = parts.length === 4 ? parseFloat(parts[3]) : 1;
+        const r = parseFloat(parts[0]);
+        const g = parseFloat(parts[1]);
+        const b = parseFloat(parts[2]);
+        const a = parts.length === 4 ? parseFloat(parts[3]) : 1;
 
         return { r, g, b, a, format: parts.length === 4 ? 'rgba' : 'rgb' };
     };
@@ -1033,7 +1033,7 @@ $.adjustContrast = (value, opts = {}) => {
     }
 
     const replaced = value.replace(colorRegex, (match) => {
-        match      = match.trim();
+        match = match.trim();
         let parsed = null;
 
         if (match.startsWith('#')) {
@@ -1140,7 +1140,7 @@ $.initKeyboardAccessibility = () => {
     let keyBuffer = [];
     let bufferTimeout;
 
-    const pressedKeys   = new Set();
+    const pressedKeys = new Set();
     const maxCodeLength = Math.max(...Object.keys(langsFlags).map(k => k.length));
 
     const resetBuffer = () => {
@@ -1400,7 +1400,7 @@ $.initTour = () => {
         return label;
     };
 
-    let steps             = [];
+    let steps = [];
     let processedElements = new Set();
 
     const fillSteps = () => {
@@ -1431,7 +1431,7 @@ $.initTour = () => {
             }
 
             const shortcut = findShortcutForElement(targetEl);
-            const label    = getLabelForElement(targetEl);
+            const label = getLabelForElement(targetEl);
 
             try {
                 value = sprintf(value, shortcut, label);
@@ -1459,7 +1459,7 @@ $.initTour = () => {
     };
 
     const maxRetries = 10;
-    let retries      = 0;
+    let retries = 0;
 
     const retryInterval = setInterval(() => {
         const done = fillSteps();
