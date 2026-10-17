@@ -214,15 +214,31 @@ The menu can be enabled and positioned directly from the layout configuration gr
 "layout": {
     "enable_rules": true|false,
     "enable_menu": true|false,
+    "qrcode_scanner": true|false,
+    "qrcode_scanner_autologin": true|false,
     "menu_position": "left|right",
     "redirect_url": ""
 },
 ```
 
 - `enable_rules` – Enables or disables the required consent to the provisions contained in the ISP provider's Regulations.  
-- `enable_menu` – Enables or disables the Offcanvas Menu
-- `menu_position` – Defines the menu position (left or right)
+- `enable_menu` – Enables or disables the Offcanvas Menu.
+- `qrcode_scanner` – Enables or disables QR scanning using the device camera. The scanner reads a QR code containing login credentials.
+- `qrcode_scanner_autologin` – When enabled, automatically submits the credentials read from a QR code. When disabled, the scanner does not submit them or populate the username and password fields. Requires `qrcode_scanner` to be enabled.
+- `menu_position` – Defines the menu position (left or right).
 - `redirect_url` – Redirection url address. If the value is not set or the set value is not a valid url address, the redirection functionality to the specified address will not be implemented.
+
+#### 📷 QR Code Scanner
+
+The scanner itself was relatively straightforward to integrate. Building and operating the complete QR credential delivery workflow is considerably more complex: it involves securely preparing and issuing codes and supporting the process that delivers them to users. The lack of an integrated QR provisioning and protection workflow applies specifically to GuardianSuit, which is publicly distributed for non-commercial use. The complete workflow and its supporting safeguards will be provided with the commercial template bundles GuardianTuxedo and GuardianTailcoat through GuardianTailor, GuardianFabric, and GuardianAtelier. These safeguards do not encrypt the basic JSON payload described below; its credentials remain readable by anyone who can scan or decode the QR code.
+
+To use the scanner with a QR code prepared independently, encode a JSON object directly as the QR code's text payload:
+
+```json
+{"user":"username","password":"password"}
+```
+
+Both `user` and `password` must be present and contain non-empty values. The scanner parses the QR payload as JSON and accepts it only when both values are present. The payload is not encrypted: the credentials are stored in the QR code as readable text and can be recovered by anyone who scans or otherwise decodes it. Treat the QR code as a credential, share it only through a suitably protected channel, and use credentials with an appropriate scope and lifetime.
 
 Menu position automatically adapts to LTR / RTL layouts
 

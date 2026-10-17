@@ -1,28 +1,33 @@
 /**
- * @version 2.9.0
+ * @version 3.0.0
  * @package GuardianSuit - Multilanguage Captive Portal Template for OPNsense
  * @author Mirosław Majka (mix@proask.pl)
  * @copyright (C) 2025 Mirosław Majka <mix@proask.pl>
  * @license GNU/GPL license: http://www.gnu.org/copyleft/gpl.html
  */
 
-$(document).ready(() => {
-    $.when($.loadSettings()).done(() => {
-        initResources().then(() => {
-            setupLanguage();
-            initializeVantaEffect();
-            useWCAG();
-            updateLogo();
-            setupRulesSection();
-            configureInputFocusBehavior();
-            setupAuthHandlers();
-            setupRulesLink();
-            checkConnectionStatus();
-        });
-    });
-});
+const initializePortal = async () => {
+    await $.loadSettings();
+    await initResources();
 
-const initResources = () => {
+    setupLanguage();
+    initializeVantaEffect();
+    useWCAG();
+    updateLogo();
+    setupRulesSection();
+    configureInputFocusBehavior();
+    setupAuthHandlers();
+    setupRulesLink();
+    checkConnectionStatus();
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializePortal, { once: true });
+} else {
+    initializePortal();
+}
+
+const initResources = async () => {
     if (settings.css_params) {
         const vars = {};
 
@@ -44,7 +49,7 @@ const initResources = () => {
         forceLocalesData();
     }
 
-    const flagsDir   = settings.layout.lang_flags_dir || '4x3';
+    const flagsDir = settings.layout.lang_flags_dir || '4x3';
     const langLayout = settings.layout.lang_layout;
 
     if (langLayout === 'flags-only-select' || langLayout === 'flags-select') {
@@ -57,7 +62,7 @@ const initResources = () => {
             document.head.appendChild(styleEl);
         }
 
-        styleEl.innerHTML = Object.keys(settings.langs)
+        styleEl.textContent = Object.keys(settings.langs)
         .map(lang => {
             const flag = langsFlags[lang] || lang;
             const url = `/images/flags/${flagsDir}/${flag}.svg`;
@@ -79,20 +84,18 @@ const initResources = () => {
         cssResources.push('offcanvas_menu.css');
     }
 
-    return $.getMultiResources(cssResources).then(() => {
-        return $.getMultiResources(jsResources);
-    }).then(() => {
-        const portal = document.querySelector('.captiveportal');
-        if (portal) {
-            portal.style.transition = 'opacity 0.3s ease';
-            portal.style.opacity = '1';
+    await $.getMultiResources(cssResources);
+    await $.getMultiResources(jsResources);
 
-            portal.addEventListener('transitionend', function handler() {
-                portal.removeAttribute('style');
-                portal.removeEventListener('transitionend', handler);
-            });
-        }
-    });
+    const portal = document.querySelector('.captiveportal');
+    if (portal) {
+        portal.style.transition = 'opacity 0.3s ease';
+        portal.style.opacity = '1';
+
+        portal.addEventListener('transitionend', () => {
+            portal.removeAttribute('style');
+        }, { once: true });
+    }
 };
 
 const applyCssVariables = (variables) => {
@@ -120,26 +123,26 @@ const useWCAG = () => {
         return;
     }
 
-    $('body').addClass('a11y');
+    document.body.classList.add('a11y');
 
     if (settings.layout.a11y_contrast) {
-        $('body').addClass('a11y-contrast');
+        document.body.classList.add('a11y-contrast');
     }
 
     if (settings.layout.a11y_highlight) {
-        $('body').addClass('a11y-highlight');
+        document.body.classList.add('a11y-highlight');
     }
 
     if (settings.layout.a11y_mono) {
-        $('body').addClass('a11y-mono');
+        document.body.classList.add('a11y-mono');
     }
 
     if (settings.layout.a11y_keyboard) {
-        $('body').addClass('a11y-keyboard');
+        document.body.classList.add('a11y-keyboard');
         $.initKeyboardAccessibility();
 
         if (settings.layout.a11y_helper) {
-            $('body').addClass('a11y-helper');
+            document.body.classList.add('a11y-helper');
 
             const resources = [
                 'tour.min.css',
@@ -199,15 +202,27 @@ const initializeVantaEffect = () => {
 };
 
 const updateLogo = async () => {
-    const logoContainer = $('#logo');
+    const logoContainer = document.querySelector('#logo');
     const fallback = '/images/default-logo.svg';
     const extensions = ['svg', 'png', 'jpg'];
     const basePath = '/images/logo';
+    
+    const setLogo = (src) => {
+        if (!logoContainer) {
+            return;
+        }
+
+        const image = document.createElement('img');
+        image.className = 'brand-logo';
+        image.src = src;
+        image.height = 150;
+        image.width = 150;
+        image.alt = 'Logo';
+        logoContainer.replaceChildren(image);
+    };
 
     if (settings.logo && settings.logo.startsWith('data:image/')) {
-        logoContainer.html(
-            `<img class="brand-logo" src="${settings.logo}" height="150" width="150" alt="Logo">`
-        );
+        setLogo(settings.logo);
 
         return;
     }
@@ -217,15 +232,11 @@ const updateLogo = async () => {
             const res = await fetch(settings.logo, { method: 'HEAD' });
 
             if (res.ok) {
-                logoContainer.html(
-                    `<img class="brand-logo" src="${settings.logo}" height="150" width="150" alt="Logo">`
-                );
+                setLogo(settings.logo);
 
                 return;
             }
-        } catch (e) {
-
-        }
+        } catch (e) {}
     }
 
     const urls = extensions.map(ext => `${basePath}.${ext}`);
@@ -235,23 +246,17 @@ const updateLogo = async () => {
             const res = await fetch(url, { method: 'HEAD' });
 
             if (res.ok) {
-                logoContainer.html(
-                    `<img class="brand-logo" src="${url}" height="150" width="150" alt="Logo">`
-                );
+                setLogo(url);
 
                 return;
             }
-        } catch (e) {
-
-        }
+        } catch (e) {}
     }
 
-    logoContainer.html(
-        `<img class="brand-logo" src="${fallback}" height="150" width="150" alt="Logo">`
-    );
+    setLogo(fallback);
 };
 
-const setupLanguage = () => {
+const setupLanguage = async () => {
     const browserLang = (navigator.language || navigator.userLanguage).substring(0, 2).toLowerCase();
     let lang = $.getCookie('lang') || browserLang;
 
@@ -259,27 +264,26 @@ const setupLanguage = () => {
         lang = settings.default_lang;
     }
 
-    $('html').attr({
-        lang,
-        dir: langsRTL.includes(lang) ? 'rtl' : 'ltr',
-    });
+    document.documentElement.lang = lang;
+    document.documentElement.dir = langsRTL.includes(lang) ? 'rtl' : 'ltr';
 
     if (!$.getCookie('lang')) {
         $.createCookie('lang', lang, 31);
     }
 
-    $.when($.loadLangs(lang)).done(() => {
-        if (Object.keys(settings.langs).length > 1) {
-            $('.captiveportal').hasClass('single-lang')
-                ? $('.captiveportal').removeClass('single-lang').addClass('multiple-langs')
-                : $('.captiveportal').addClass('multiple-langs');
-            $.setLangLayout(settings.langs, lang, '#polyglotLanguageSwitcher');
-        } else {
-            $('.captiveportal').hasClass('multiple-langs')
-                ? $('.captiveportal').removeClass('multiple-langs').addClass('single-lang')
-                : $('.captiveportal').addClass('single-lang');
-        }
-    });
+    await $.loadLangs(lang);
+
+    const hasMultipleLanguages = Object.keys(settings.langs).length > 1;
+    const portal = document.querySelector('.captiveportal');
+
+    if (portal) {
+        portal.classList.toggle('multiple-langs', hasMultipleLanguages);
+        portal.classList.toggle('single-lang', !hasMultipleLanguages);
+    }
+
+    if (hasMultipleLanguages) {
+        $.setLangLayout(settings.langs, lang, '#polyglotLanguageSwitcher');
+    }
 };
 
 const setupRulesSection = () => {
@@ -287,40 +291,96 @@ const setupRulesSection = () => {
         toggleSignInButtons('#login-rules', '#signin');
         toggleSignInButtons('#login-rules-anon', '#signin_anon');
     } else {
-        $('.rules-checkbox').html('<br />');
+        document.querySelectorAll('.rules-checkbox').forEach(element => {
+            element.replaceChildren(document.createElement('br'));
+        });
     }
 };
 
 const toggleSignInButtons = (checkboxSelector, buttonSelector) => {
-    $(checkboxSelector).prop('checked', false);
-    $(buttonSelector).prop('disabled', true);
+    const checkbox = document.querySelector(checkboxSelector);
+    const button = document.querySelector(buttonSelector);
 
-    $(checkboxSelector).on('change', function () {
-        $(buttonSelector).prop('disabled', !$(this).prop('checked'));
+    if (!checkbox || !button) {
+        return;
+    }
+
+    checkbox.checked = false;
+    button.disabled = true;
+
+    checkbox.addEventListener('change', () => {
+        button.disabled = !checkbox.checked;
     });
 };
 
 const configureInputFocusBehavior = () => {
-    $('input[readonly]').on('focus', function () {
-        $(this).prop('readonly', false);
+    document.querySelectorAll('input[readonly]').forEach(input => {
+        input.addEventListener('focus', () => {
+            input.readOnly = false;
+        });
     });
 
-    $('input:not([readonly])').on('blur', function () {
-        $(this).prop('readonly', true);
+    document.querySelectorAll('input:not([readonly])').forEach(input => {
+        input.addEventListener('blur', () => {
+            input.readOnly = true;
+        });
     });
 };
 
 const setupAuthHandlers = () => {
-    $('#signin').on('click', handleSignIn);
-    $('#signin_anon').on('click', handleAnonymousSignIn);
-    $('#logoff').on('click', handleLogoff);
+    if (settings.layout?.qrcode_scanner) {
+        const resources = ['jsqr.min.js'];
+
+        $.getMultiResources(resources, 'jsqr').then(() => {
+            if (typeof $.initQrcodeScanner === 'function') {
+                document.body.classList.add('qrcode-scanner');
+
+                const startScanner = () => {
+                    $.initQrcodeScanner().then(data => {
+                        if (data?.user && data?.password) {
+                            const usernameInput = document.querySelector('#inputUsername');
+                            const passwordInput = document.querySelector('#inputPassword');
+
+                            if (usernameInput) {
+                                usernameInput.value = data.user;
+                            }
+
+                            if (passwordInput) {
+                                passwordInput.value = data.password;
+                            }
+
+                            if (settings.layout.qrcode_scanner_autologin) {
+                                authenticateUser({
+                                    user: data.user,
+                                    password: data.password
+                                });
+                            }
+                        }
+
+                        startScanner();
+                    });
+                };
+
+                startScanner();
+            } else {
+                console.warn('initQrcodeScanner does not exist after loading resources!');
+            }
+        })
+        .catch(err => {
+            console.error('Error loading accessibility QR resources:', err);
+        });
+    }
+
+    document.querySelector('#signin')?.addEventListener('click', handleSignIn);
+    document.querySelector('#signin_anon')?.addEventListener('click', handleAnonymousSignIn);
+    document.querySelector('#logoff')?.addEventListener('click', handleLogoff);
 };
 
 const handleSignIn = (event) => {
     event.preventDefault();
     authenticateUser({
-        user: $('#inputUsername').val(),
-        password: $('#inputPassword').val(),
+        user: document.querySelector('#inputUsername')?.value,
+        password: document.querySelector('#inputPassword')?.value,
     });
 };
 
@@ -329,49 +389,86 @@ const handleAnonymousSignIn = (event) => {
     authenticateUser({ user: '', password: '' });
 };
 
-const handleLogoff = (event) => {
+const handleLogoff = async (event) => {
     event.preventDefault();
-    $.ajax({
-        type: 'POST',
-        url: '/api/captiveportal/access/logoff/',
-        dataType: 'json',
-        data: { user: '', password: '' },
-    })
-    .done(() => window.location.reload())
-    .fail($.connectionFailed);
+
+    try {
+        const response = await fetch('/api/captiveportal/access/logoff/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+            },
+            body: new URLSearchParams({ user: '', password: '' })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Logoff request failed: ${response.status}`);
+        }
+
+        await response.json();
+        window.location.reload();
+    } catch {
+        $.connectionFailed();
+    }
 };
 
-const authenticateUser = (credentials) => {
-    $.ajax({
-        type: 'POST',
-        url: '/api/captiveportal/access/logon/',
-        dataType: 'json',
-        data: credentials,
-    })
-    .done((data) => {
-        $.clientInfo(data);
-        $.connectionLogon(data);
-    })
-    .fail($.connectionFailed);
+const authenticateUser = async (credentials) => {
+    let data;
+
+    try {
+        const response = await fetch('/api/captiveportal/access/logon/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+            },
+            body: new URLSearchParams(credentials)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Authentication request failed: ${response.status}`);
+        }
+
+        data = await response.json();
+    } catch {
+        $.connectionFailed();
+        return;
+    }
+
+    $.clientInfo(data);
+    $.connectionLogon(data);
 };
 
 const setupRulesLink = () => {
-    $('[id^="rules"].link').on('click', $.showRules);
+    document.querySelectorAll('[id^="rules"].link').forEach(link => {
+        link.addEventListener('click', $.showRules);
+    });
 };
 
-const checkConnectionStatus = () => {
-    $.ajax({
-        type: 'POST',
-        url: '/api/captiveportal/access/status/',
-        dataType: 'json',
-        data: {
-            user: $('#inputUsername').val(),
-            password: $('#inputPassword').val(),
-        },
-    })
-    .done((data) => {
-        $.clientInfo(data);
-        $.connectionStatus(data);
-    })
-    .fail(() => setTimeout($.connectionFailed, 1000));
+const checkConnectionStatus = async () => {
+    let data;
+
+    try {
+        const response = await fetch('/api/captiveportal/access/status/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+            },
+            body: new URLSearchParams({
+                user: document.querySelector('#inputUsername')?.value ?? '',
+                password: document.querySelector('#inputPassword')?.value ?? ''
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Connection status request failed: ${response.status}`);
+        }
+
+        data = await response.json();
+    } catch {
+        setTimeout($.connectionFailed, 1000);
+        return;
+    }
+
+    $.clientInfo(data);
+    $.connectionStatus(data);
 };
