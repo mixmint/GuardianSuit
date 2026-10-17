@@ -36,7 +36,16 @@
                 border-bottom-right-radius: 5px;
             }
         }
-
+        #qrcode {
+            right: unset;
+            left: 10px;
+            &::before,
+            &::after {
+                transform: translateX(calc(-50% + 5px));
+                border-right: unset;
+                border-left: 1px solid var(--input_field_placeholder_color, transparent);
+            }
+        }
     }
     input[type="checkbox"],
     input[type="radio"] {

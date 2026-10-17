@@ -1,5 +1,5 @@
 /**
- * @version 2.9.0
+ * @version 3.0.0
  * @package GuardianSuit - Multilanguage Captive Portal Template for OPNsense
  * @author Mirosław Majka (mix@proask.pl)
  * @copyright (C) 2025 Mirosław Majka <mix@proask.pl>
@@ -42,6 +42,8 @@ let settings = {},
         tl: "tl-PH", tn: "tn-BW", to: "to-TO", tr: "tr-TR", uk: "uk-UA", ur: "ur-PK", uz: "uz-UZ", vi: "vi-VN", xh: "xh-ZA", yi: "he-IL", zh: "zh-CN",
         zu: "zu-ZA"
     };
+    qrScannerActive = false,
+    qrScannerResolve = null;
 
 const shortcutMap = {
     u: "#inputUsername",
@@ -52,6 +54,7 @@ const shortcutMap = {
     o: "#logoff",
     l: ".trigger, a.current",
     h: "#launchTour",
+    q: "#qrcode",
     m: "#menuTrigger"
 };
 
@@ -1496,4 +1499,406 @@ $.initTour = () => {
     const tour = new tourguide.TourGuideClient(tourOptions);
 
     return tour;
+};
+
+$.initQrcodeScanner = () => {
+    if (qrScannerActive) {
+        console.warn('QR scanner: already running, skipping new init');
+        return Promise.resolve(null);
+    }
+
+    qrScannerActive = true;
+
+    return new Promise((resolve) => {
+        if (!settings.layout?.qrcode_scanner) {
+            qrScannerActive = false;
+            return resolve(null);
+        }
+
+        qrScannerResolve = resolve;
+
+        const usernameField = document.getElementById('fieldUsername');
+        const passwordField = document.getElementById('fieldPassword');
+
+        if (!usernameField || !passwordField) {
+            console.warn('QR scanner: required fields not found');
+            qrScannerActive = false;
+            return resolve(null);
+        }
+
+        const wrapper = usernameField.closest('.form-fields-wrapper') || usernameField.parentNode;
+        if (getComputedStyle(wrapper).position === 'static') {
+            wrapper.classList.add('position-relative');
+        }
+
+        (async () => {
+            try {
+                if (!navigator.mediaDevices || typeof navigator.mediaDevices.enumerateDevices !== 'function') {
+                    qrScannerActive = false;
+                    return resolve(null);
+                }
+
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const hasVideo = Array.isArray(devices) && devices.some(d => d.kind === 'videoinput');
+
+                if (!hasVideo) {
+                    qrScannerActive = false;
+                    return resolve(null);
+                }
+
+                usernameField.classList.replace('w-100', 'w-85');
+                passwordField.classList.replace('w-100', 'w-85');
+            } catch (err) {
+                qrScannerActive = false;
+                return resolve(null);
+            }
+
+            let qrDiv = wrapper.querySelector('#qrcode');
+            if (!qrDiv) {
+                qrDiv = document.createElement('div');
+                qrDiv.id = 'qrcode';
+                qrDiv.classList.add('position-absolute');
+                qrDiv.style.cursor = 'pointer';
+                qrDiv.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M0 .5A.5.5 0 0 1 .5 0h3a.5.5 0 0 1 0 1H1v2.5a.5.5 0 0 1-1 0zm12 0a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-1 0V1h-2.5a.5.5 0 0 1-.5-.5M.5 12a.5.5 0 0 1 .5.5V15h2.5a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5v-3a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1 0-1H15v-2.5a.5.5 0 0 1 .5-.5M4 4h1v1H4z"/>
+                    <path d="M7 2H2v5h5zM3 3h3v3H3zm2 8H4v1h1z"/>
+                    <path d="M7 9H2v5h5zm-4 1h3v3H3zm8-6h1v1h-1z"/>
+                    <path d="M9 2h5v5H9zm1 1v3h3V3zM8 8v2h1v1H8v1h2v-2h1v2h1v-1h2v-1h-3V8zm2 2H9V9h1zm4 2h-1v1h-2v1h3zm-4 2v-1H8v1z"/>
+                    <path d="M12 9h2V8h-2z"/>
+                </svg>`;
+                wrapper.appendChild(qrDiv);
+            }
+
+            if (qrDiv._qrClickBound) {
+                requestAnimationFrame(() => {
+                    updateQrPosition();
+                });
+            } else {
+                qrDiv._qrClickBound = true;
+                qrDiv.addEventListener('click', () => {
+                    if (!scanning) {
+                        startScan();
+                    } else {
+                        stopScan();
+                    }
+                });
+            }
+
+            let scanning = false;
+            let stream = null;
+            let video = null;
+            let overlayCanvas = null;
+            let overlayCtx = null;
+            let scanTimer = null;
+
+            if (navigator.mediaDevices && typeof navigator.mediaDevices.addEventListener === 'function') {
+                navigator.mediaDevices.ondevicechange = async () => {
+                    try {
+                        const devices = await navigator.mediaDevices.enumerateDevices();
+                        const hasVideo = Array.isArray(devices) && devices.some(d => d.kind === 'videoinput');
+
+                        if (!hasVideo) {
+                            stopScan();
+                            if (qrDiv && qrDiv.parentNode) {
+                                qrDiv.parentNode.removeChild(qrDiv);
+                            }
+
+                            usernameField.classList.remove('w-85');
+                            usernameField.classList.add('w-100');
+                            passwordField.classList.remove('w-85');
+                            passwordField.classList.add('w-100');
+                        }
+                    } catch (err) {
+                        console.warn('QR scanner: devicechange handler error', err);
+                    }
+                };
+            }
+
+            const SCAN_W = 320, SCAN_H = 240;
+
+            const scanCanvas = document.createElement('canvas');
+            const scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
+            scanCanvas.width = SCAN_W;
+            scanCanvas.height = SCAN_H;
+
+            const hideClasses = ['w-0','h-0','m-0','p-0','opacity-0','z-n1','overflow-hidden'];
+            const showClasses = ['w-85','opacity-100'];
+
+            const addClassesToChildren = (el, classes) => Array.from(el.children).forEach(c => c.classList.add(...classes));
+            const removeClassesFromChildren = (el, classes) => Array.from(el.children).forEach(c => c.classList.remove(...classes));
+
+            const getOffsetWithinAncestor = (el, ancestor) => {
+                let offset = 0;
+                while (el && el !== ancestor) {
+                    offset += el.offsetTop || 0;
+                    el = el.offsetParent;
+                }
+                return offset;
+            };
+
+            const updateQrPosition = () => {
+                if (!qrDiv) {
+                    return;
+                }
+
+                if (qrDiv.parentNode !== wrapper) {
+                    wrapper.appendChild(qrDiv);
+                }
+
+                let topPx = 0;
+
+                if (scanning && video) {
+                    const rect = video.getBoundingClientRect();
+                    const wrapperRect = wrapper.getBoundingClientRect();
+                    topPx = rect.top + rect.height / 2 - wrapperRect.top - qrDiv.offsetHeight / 2;
+                } else {
+                    const uBottom = getOffsetWithinAncestor(usernameField, wrapper) + usernameField.offsetHeight;
+                    const pTop = getOffsetWithinAncestor(passwordField, wrapper);
+                    topPx = (uBottom + pTop) / 2 - qrDiv.offsetHeight / 2;
+                }
+
+                const wrapH = wrapper.clientHeight || wrapper.getBoundingClientRect().height || 0;
+                if (topPx < 0) {
+                    topPx = 0;
+                }
+
+                if (wrapH > 0 && topPx + qrDiv.offsetHeight > wrapH) {
+                    topPx = wrapH - qrDiv.offsetHeight;
+                }
+
+                qrDiv.style.top = Math.round(topPx) + 'px';
+
+                updateQrLines();
+            };
+
+            const updateQrLines = () => {
+                if (!qrDiv) {
+                    return;
+                }
+
+                let topBound, bottomBound;
+
+                if (scanning && video) {
+                    const rect = video.parentNode.getBoundingClientRect();
+                    topBound = rect.top;
+                    bottomBound = rect.bottom;
+                } else {
+                    topBound = usernameField.getBoundingClientRect().top;
+                    bottomBound = passwordField.getBoundingClientRect().bottom;
+                }
+
+                const qrRect = qrDiv.getBoundingClientRect();
+
+                const beforeHeight = qrRect.top - topBound;
+                const afterHeight = bottomBound - qrRect.bottom;
+
+                qrDiv.style.setProperty('--before-height', `${beforeHeight}px`);
+                qrDiv.style.setProperty('--after-height', `${afterHeight}px`);
+            };
+
+            const startScan = async () => {
+                if (scanning) {
+                    return;
+                }
+
+                scanning = true;
+
+                usernameField.classList.add(...hideClasses);
+                passwordField.classList.add(...hideClasses);
+                addClassesToChildren(usernameField, hideClasses);
+                addClassesToChildren(passwordField, hideClasses);
+
+                let scanContainer = wrapper.querySelector('.qr-scan-container');
+                if (!scanContainer) {
+                    scanContainer = document.createElement('div');
+                    scanContainer.classList.add('qr-scan-container', 'position-relative', 'w-85');
+                    usernameField.parentNode.insertBefore(scanContainer, usernameField);
+                } else {
+                    scanContainer.innerHTML = '';
+                }
+
+                video = document.createElement('video');
+                video.autoplay = true;
+                video.playsInline = true;
+                video.muted = true;
+
+                video.classList.add('field-type-qr','d-block','w-100','h-auto');
+                scanContainer.appendChild(video);
+
+                overlayCanvas = document.createElement('canvas');
+                overlayCanvas.classList.add('position-absolute');
+                overlayCanvas.style.pointerEvents = 'none';
+                scanContainer.appendChild(overlayCanvas);
+
+                overlayCtx = overlayCanvas.getContext('2d', { willReadFrequently: true });
+
+                requestAnimationFrame(updateQrPosition);
+
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+                    video.srcObject = stream;
+
+                    video.addEventListener('loadedmetadata', () => {
+                        const videoRect = video.getBoundingClientRect();
+                        const containerRect = scanContainer.getBoundingClientRect();
+
+                        overlayCanvas.width = video.videoWidth;
+                        overlayCanvas.height = video.videoHeight;
+                        overlayCanvas.style.left = `${videoRect.left - containerRect.left}px`;
+                        overlayCanvas.style.top = `${videoRect.top - containerRect.top}px`;
+                        overlayCanvas.style.width = `${videoRect.width}px`;
+                        overlayCanvas.style.height = `${videoRect.height}px`;
+                        updateQrPosition();
+                    });
+
+                    await video.play();
+                    scanLoop();
+                } catch (err) {
+                    console.error('QR scanner: failed to start camera', err);
+                    stopScan();
+                }
+            };
+
+            const stopScan = () => {
+                scanning = false;
+
+                if (scanTimer) {
+                    clearTimeout(scanTimer);
+                    scanTimer = null;
+                }
+
+                if (stream) {
+                    stream.getTracks().forEach(t => t.stop());
+                    stream = null;
+                }
+
+                const scanContainer = wrapper.querySelector('.qr-scan-container');
+                if (scanContainer && scanContainer.parentNode) {
+                    scanContainer.parentNode.removeChild(scanContainer);
+                }
+
+                video = null;
+                overlayCanvas = null;
+                overlayCtx = null;
+
+                usernameField.classList.remove(...hideClasses);
+                usernameField.classList.add(...showClasses);
+                passwordField.classList.remove(...hideClasses);
+                passwordField.classList.add(...showClasses);
+
+                removeClassesFromChildren(usernameField, hideClasses);
+                removeClassesFromChildren(passwordField, hideClasses);
+
+                updateQrPosition();
+
+                if (qrScannerResolve) {
+                    qrScannerResolve(null);
+                    qrScannerResolve = null;
+                }
+
+                qrScannerActive = false;
+            };
+
+            const scanLoop = () => {
+                if (!scanning || !video || video.readyState !== video.HAVE_ENOUGH_DATA) {
+                    scanTimer = setTimeout(scanLoop,100);
+                    return;
+                }
+
+                scanCtx.clearRect(0,0,SCAN_W,SCAN_H);
+                scanCtx.drawImage(video, 0, 0, SCAN_W, SCAN_H);
+
+                const imageData = scanCtx.getImageData(0,0,SCAN_W,SCAN_H);
+                const code = jsQR(
+                    imageData.data,
+                    SCAN_W,
+                    SCAN_H,
+                    {
+                        inversionAttempts: 'attemptBoth'
+                    }
+                );
+
+                if (overlayCtx && overlayCanvas) {
+                    overlayCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
+                }
+
+                if (code && overlayCtx && overlayCanvas) {
+                    const scaleX = overlayCanvas.width/SCAN_W;
+                    const scaleY = overlayCanvas.height/SCAN_H;
+                    const tl = { x: code.location.topLeftCorner.x*scaleX, y: code.location.topLeftCorner.y*scaleY };
+                    const tr = { x: code.location.topRightCorner.x*scaleX, y: code.location.topRightCorner.y*scaleY };
+                    const br = { x: code.location.bottomRightCorner.x*scaleX, y: code.location.bottomRightCorner.y*scaleY };
+                    const bl = { x: code.location.bottomLeftCorner.x*scaleX, y: code.location.bottomLeftCorner.y*scaleY };
+
+                    overlayCtx.strokeStyle = 'lime';
+                    overlayCtx.lineWidth   = Math.max(2, Math.round(4*((overlayCanvas.width/SCAN_W+overlayCanvas.height/SCAN_H)/2)));
+                    overlayCtx.beginPath();
+                    overlayCtx.moveTo(tl.x, tl.y);
+                    overlayCtx.lineTo(tr.x, tr.y);
+                    overlayCtx.lineTo(br.x, br.y);
+                    overlayCtx.lineTo(bl.x, bl.y);
+                    overlayCtx.closePath();
+                    overlayCtx.stroke();
+
+                    try {
+                        const data = JSON.parse(code.data);
+                        if (data?.user && data?.password) {
+                            qrDiv.classList.remove('qr-ready');
+                            qrDiv.classList.add('qr-ready');
+                            setTimeout(() => qrDiv.classList.remove('qr-ready'), 750);
+                            playBeep();
+
+                            scanning = false;
+                            scanTimer = setTimeout(() => {
+                                const resolver = qrScannerResolve;
+                                qrScannerResolve = null;
+                                stopScan();
+                                resolver?.(data);
+                            }, 350);
+                            return;
+                        }
+                    } catch (e) { }
+                }
+
+                scanTimer = setTimeout(scanLoop,100);
+            };
+
+            const playBeep = () => {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+                const beep = (startTime) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(1100, startTime);
+
+                    gain.gain.setValueAtTime(0, startTime);
+                    gain.gain.linearRampToValueAtTime(0.5, startTime + 0.015);
+                    gain.gain.linearRampToValueAtTime(0, startTime + 0.18);
+
+                    osc.connect(gain).connect(ctx.destination);
+                    osc.start(startTime);
+                    osc.stop(startTime + 0.18);
+                };
+
+                const now = ctx.currentTime;
+                beep(now);
+                beep(now + 0.17);
+            };
+
+            const waitForLayout = () => new Promise(resolve => {
+                const check = () => {
+                    if (usernameField.offsetHeight && passwordField.offsetHeight && wrapper.clientHeight) {
+                        resolve(true);
+                    } else {
+                        requestAnimationFrame(check);
+                    }
+                };
+                check();
+            });
+
+            waitForLayout().then(updateQrPosition);
+        })();
+    });
 };

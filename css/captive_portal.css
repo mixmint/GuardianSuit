@@ -389,6 +389,56 @@
                 background-color: #fff;
             }
         }
+        .field-type-qr {
+            margin-top: 40px;
+            border-radius: 5px;
+        }
+    }
+    #qrcode {
+        position: absolute;
+        right: 10px;
+        cursor: pointer;
+        caret-color: transparent;
+        color: var(--qrcode_scanner_color, transparent);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        svg {
+            width: 35px;
+            height: 35px;
+            &:hover {
+                color: var(--qrcode_scanner_hover_color, transparent);
+            }
+        }
+        &::before,
+        &::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            transform: translateX(calc(-50% - 5px));
+            width: 10px;
+            border-right: 1px solid var(--qrcode_scanner_color, transparent);
+        }
+        &::before {
+            top: calc(-1 * var(--before-height, 30px));
+            height: calc(var(--before-height, 30px) - 10px);
+            border-top: 1px solid var(--qrcode_scanner_color, transparent);
+        }
+        &::after {
+            bottom: calc(-1 * var(--after-height, 30px));
+            height: calc(var(--after-height, 30px) - 10px);
+            border-bottom: 1px solid var(--qrcode_scanner_color, transparent);
+        }
+        &.qr-ready {
+            svg {
+                transform-origin: center;
+                animation-name: QR-READY;
+                animation-duration: 0.22s;
+                animation-timing-function: ease-in-out;
+                animation-iteration-count: 3;
+                animation-fill-mode: none;
+            }
+        }
     }
     &.single-lang {
         .form {
@@ -513,6 +563,46 @@
     }
 }
 
+.qrcode-scanner {
+    .captiveportal {
+        .form-fields-wrapper {
+            z-index: 2;
+            &:not([id]) {
+                z-index: 3;
+            }
+        }
+
+        .qr-container {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-scanner-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            caret-color: transparent;
+            padding: 0.25rem;
+            color: var(--text-color, #333);
+        }
+
+        .qr-scanner-overlay video,
+        .qr-scanner-overlay canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .field-group {
+            .field-text {
+                &::placeholder {
+                    font-size: 90%;
+                }
+            }
+        }
+    }
+}
+
 #status_info,
 #anon_info {
     .widget-heading {
@@ -597,17 +687,17 @@ html {
             flex: 0 0 50%;
         }
         #polyglotLanguageSwitcher {
-        &.flags-select {
-            & ul {
-                &.dropdown {
-                    max-height: 246px;
-                    width: 100%;
-                    & + .mouse-scroll {
-                        right: -25px;
+            &.flags-select {
+                & ul {
+                    &.dropdown {
+                        max-height: 246px;
+                        width: 100%;
+                        & + .mouse-scroll {
+                            right: -25px;
+                        }
                     }
                 }
             }
-        }
         }
     }
 }
@@ -658,5 +748,23 @@ html {
 
     100% {
         opacity: 0;
+    }
+}
+
+@keyframes QR-READY {
+    0% {
+        color: currentColor;
+        filter: none;
+        transform: none;
+    }
+    50% {
+        color: var(--button_hover_bg_color, initial);
+        filter: drop-shadow(0 0 6px var(--button_hover_bg_color, initial));
+        transform: scale(1.08);
+    }
+    100% {
+        color: currentColor;
+        filter: none;
+        transform: none;
     }
 }
